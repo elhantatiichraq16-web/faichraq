@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture {{ facture.reference }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+        }
+        
+        .company-info {
+            flex: 1;
+        }
+        
+        .company-info h1 {
+            color: #007bff;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        
+        .invoice-info {
+            text-align: right;
+            flex: 1;
+        }
+        
+        .invoice-info h2 {
+            color: #007bff;
+            margin: 0 0 10px 0;
+            font-size: 20px;
+        }
+        
+        .client-info {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .client-info h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        
+        .invoice-details .detail-group {
+            flex: 1;
+            margin-right: 20px;
+        }
+        
+        .invoice-details .detail-group:last-child {
+            margin-right: 0;
+        }
+        
+        .detail-group h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+        
+        .detail-group p {
+            margin: 5px 0;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .items-table th,
+        .items-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .items-table th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .items-table .text-right {
+            text-align: right;
+        }
+        
+        .items-table .text-center {
+            text-align: center;
+        }
+        
+        .totals {
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+        }
+        
+        .totals table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .totals td {
+            padding: 5px 10px;
+            border: none;
+        }
+        
+        .totals .total-label {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .totals .total-amount {
+            text-align: right;
+        }
+        
+        .totals .grand-total {
+            border-top: 2px solid #007bff;
+            font-size: 14px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .notes {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .notes h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 10px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            padding-top: 20px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-brouillon {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .status-validee {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .status-payee {
+            background-color: #28a745;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-info">
+            <h1>{{ app_name }}</h1>
+            <p><strong>Adresse :</strong> 123 Rue de l'Exemple<br>10000 Casablanca, Maroc</p>
+            <p><strong>Téléphone :</strong> +212 5XX XXX XXX</p>
+            <p><strong>Email :</strong> contact@exemple.ma</p>
+        </div>
+        <div class="invoice-info">
+            <h2>FACTURE</h2>
+            <p><strong>Référence :</strong> {{ facture.reference }}</p>
+            <p><strong>Date :</strong> {{ facture.dateFacture|date('d/m/Y') }}</p>
+            {% if facture.dateEcheance %}
+                <p><strong>Échéance :</strong> {{ facture.dateEcheance|date('d/m/Y') }}</p>
+            {% endif %}
+            <p><strong>État :</strong> 
+                <span class="status-badge status-{{ facture.etat|lower }}">
+                    {{ facture.etat }}
+                </span>
+            </p>
+        </div>
+    </div>
+    
+    <div class="client-info">
+        <h3>Facturé à :</h3>
+        <p><strong>{{ facture.client.nom }}</strong></p>
+        {% if facture.client.adresse %}
+            <p>{{ facture.client.adresse|nl2br }}</p>
+        {% endif %}
+        {% if facture.client.email %}
+            <p><strong>Email :</strong> {{ facture.client.email }}</p>
+        {% endif %}
+        {% if facture.client.telephone %}
+            <p><strong>Téléphone :</strong> {{ facture.client.telephone }}</p>
+        {% endif %}
+        {% if facture.client.numTva %}
+            <p><strong>N° TVA :</strong> {{ facture.client.numTva }}</p>
+        {% endif %}
+    </div>
+    
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Désignation</th>
+                <th class="text-center">Quantité</th>
+                <th class="text-right">Prix unitaire</th>
+                <th class="text-center">TVA</th>
+                <th class="text-right">Total HT</th>
+                <th class="text-right">Total TTC</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in facture.lignes %}
+                <tr>
+                    <td>{{ ligne.designation }}</td>
+                    <td class="text-center">{{ ligne.quantite }}</td>
+                    <td class="text-right">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                    <td class="text-center">{{ ligne.tva }}%</td>
+                    <td class="text-right">{{ ligne.getMontantHt()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                    <td class="text-right">{{ ligne.getMontantTtc()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="totals">
+        <table>
+            <tr>
+                <td class="total-label">Total HT :</td>
+                <td class="total-amount">{{ facture.totalHt|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+            </tr>
+            <tr>
+                <td class="total-label">Total TVA :</td>
+                <td class="total-amount">{{ facture.getTotalTva()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+            </tr>
+            <tr class="grand-total">
+                <td class="total-label">Total TTC :</td>
+                <td class="total-amount">{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    {% if facture.notes %}
+        <div class="notes">
+            <h4>Notes :</h4>
+            <p>{{ facture.notes|nl2br }}</p>
+        </div>
+    {% endif %}
+    
+    <div class="footer">
+        <p>Merci pour votre confiance !</p>
+        <p>Cette facture a été générée automatiquement le {{ "now"|date('d/m/Y à H:i') }}</p>
+    </div>
+</body>
+</html>
+

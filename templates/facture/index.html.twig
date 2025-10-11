@@ -1,0 +1,132 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Factures - {{ parent() }}{% endblock %}
+{% block page_title %}Gestion des factures{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('facture_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nouvelle facture
+    </a>
+{% endblock %}
+
+{% block body %}
+<!-- Filtres -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" id="filter-form">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Recherche</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Référence ou client...">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Client</label>
+                            <select name="client" class="form-select">
+                                <option value="">Tous les clients</option>
+                                {% for client in clients %}
+                                    <option value="{{ client.id }}" {{ selected_client and selected_client.id == client.id ? 'selected' : '' }}>
+                                        {{ client.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">État</label>
+                            <select name="etat" class="form-select">
+                                <option value="">Tous les états</option>
+                                <option value="Brouillon" {{ selected_etat == 'Brouillon' ? 'selected' : '' }}>Brouillon</option>
+                                <option value="Validée" {{ selected_etat == 'Validée' ? 'selected' : '' }}>Validée</option>
+                                <option value="Payée" {{ selected_etat == 'Payée' ? 'selected' : '' }}>Payée</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Date début</label>
+                            <input type="date" class="form-control" name="date_debut" value="{{ date_debut ? date_debut|date('Y-m-d') : '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Date fin</label>
+                            <input type="date" class="form-control" name="date_fin" value="{{ date_fin ? date_fin|date('Y-m-d') : '' }}">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-flex gap-1">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                                <a href="{{ path('facture_index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des factures -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    Liste des factures
+                    <span class="badge bg-primary ms-2">{{ factures|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="factures-list">
+                    {% include 'facture/_list.html.twig' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filter-form');
+    const facturesList = document.getElementById('factures-list');
+    
+    // Filtrage automatique
+    filterForm.addEventListener('change', function() {
+        performFilter();
+    });
+    
+    function performFilter() {
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        const url = new URL(window.location);
+        url.search = params.toString();
+        
+        axios.get(url.toString())
+            .then(response => {
+                facturesList.innerHTML = response.data;
+            })
+            .catch(error => {
+                console.error('Erreur lors du filtrage:', error);
+            });
+    }
+    
+    // Confirmation de suppression
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-delete')) {
+            e.preventDefault();
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) {
+                const form = e.target.closest('form');
+                form.submit();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+

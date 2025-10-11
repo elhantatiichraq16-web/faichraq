@@ -1,0 +1,95 @@
+{% if tiers|length > 0 %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Adresse</th>
+                    <th>Numéro TVA</th>
+                    <th>Factures</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tier in tiers %}
+                    <tr>
+                        <td>
+                            <strong>{{ tier.nom }}</strong>
+                        </td>
+                        <td>
+                            {% if tier.email %}
+                                <a href="mailto:{{ tier.email }}" class="text-decoration-none">
+                                    <i class="bi bi-envelope"></i> {{ tier.email }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tier.telephone %}
+                                <a href="tel:{{ tier.telephone }}" class="text-decoration-none">
+                                    <i class="bi bi-telephone"></i> {{ tier.telephone }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tier.adresse %}
+                                <span title="{{ tier.adresse }}">
+                                    {{ tier.adresse|length > 30 ? tier.adresse|slice(0, 30) ~ '...' : tier.adresse }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tier.numTva %}
+                                <code>{{ tier.numTva }}</code>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ tier.factures|length }}</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ path('tiers_show', {'id': tier.id}) }}" class="btn btn-outline-primary" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ path('tiers_edit', {'id': tier.id}) }}" class="btn btn-outline-warning" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="post" action="{{ path('tiers_delete', {'id': tier.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ tier.id) }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-delete" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+        <h4 class="text-muted mt-3">Aucun client trouvé</h4>
+        <p class="text-muted">
+            {% if search %}
+                Aucun client ne correspond à votre recherche "{{ search }}".
+            {% else %}
+                Commencez par ajouter votre premier client.
+            {% endif %}
+        </p>
+        <a href="{{ path('tiers_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Ajouter un client
+        </a>
+    </div>
+{% endif %}
+

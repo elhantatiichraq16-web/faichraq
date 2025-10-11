@@ -1,0 +1,85 @@
+{% if factures|length > 0 %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Référence</th>
+                    <th>Client</th>
+                    <th>Date</th>
+                    <th>Échéance</th>
+                    <th>État</th>
+                    <th>Total HT</th>
+                    <th>Total TTC</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for facture in factures %}
+                    <tr>
+                        <td>
+                            <strong>{{ facture.reference }}</strong>
+                        </td>
+                        <td>
+                            <a href="{{ path('tiers_show', {'id': facture.client.id}) }}" class="text-decoration-none">
+                                {{ facture.client.nom }}
+                            </a>
+                        </td>
+                        <td>{{ facture.dateFacture|date('d/m/Y') }}</td>
+                        <td>
+                            {% if facture.dateEcheance %}
+                                {{ facture.dateEcheance|date('d/m/Y') }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set badge_class = facture.etat == 'Payée' ? 'success' : (facture.etat == 'Validée' ? 'primary' : 'secondary') %}
+                            <span class="badge bg-{{ badge_class }} status-badge">
+                                {{ facture.etat }}
+                            </span>
+                        </td>
+                        <td>{{ facture.totalHt|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                        <td>
+                            <strong>{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</strong>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ path('facture_show', {'id': facture.id}) }}" class="btn btn-outline-primary" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ path('facture_edit', {'id': facture.id}) }}" class="btn btn-outline-warning" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ path('facture_pdf', {'id': facture.id}) }}" class="btn btn-outline-danger" title="PDF">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                                <form method="post" action="{{ path('facture_delete', {'id': facture.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ facture.id) }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-delete" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-receipt text-muted" style="font-size: 4rem;"></i>
+        <h4 class="text-muted mt-3">Aucune facture trouvée</h4>
+        <p class="text-muted">
+            {% if search or selected_client or selected_etat or date_debut or date_fin %}
+                Aucune facture ne correspond à vos critères de recherche.
+            {% else %}
+                Commencez par créer votre première facture.
+            {% endif %}
+        </p>
+        <a href="{{ path('facture_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Créer une facture
+        </a>
+    </div>
+{% endif %}
+

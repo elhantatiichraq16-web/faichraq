@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Clients - {{ parent() }}{% endblock %}
+{% block page_title %}Gestion des clients{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('tiers_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nouveau client
+    </a>
+{% endblock %}
+
+{% block body %}
+<!-- Filtres -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" id="search-form">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Rechercher par nom ou email...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Rechercher
+                                </button>
+                                <a href="{{ path('tiers_index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des clients -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    Liste des clients
+                    <span class="badge bg-primary ms-2">{{ tiers|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="tiers-list">
+                    {% include 'tiers/_list.html.twig' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('search-form');
+    const searchInput = searchForm.querySelector('input[name="search"]');
+    const tiersList = document.getElementById('tiers-list');
+    
+    // Recherche en temps réel
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performSearch();
+        }, 300);
+    });
+    
+    function performSearch() {
+        const searchTerm = searchInput.value;
+        const url = new URL(window.location);
+        url.searchParams.set('search', searchTerm);
+        
+        axios.get(url.toString())
+            .then(response => {
+                tiersList.innerHTML = response.data;
+            })
+            .catch(error => {
+                console.error('Erreur lors de la recherche:', error);
+            });
+    }
+    
+    // Confirmation de suppression
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-delete')) {
+            e.preventDefault();
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
+                const form = e.target.closest('form');
+                form.submit();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+

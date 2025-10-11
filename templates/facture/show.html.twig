@@ -1,0 +1,230 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ facture.reference }} - {{ parent() }}{% endblock %}
+{% block page_title %}Détails de la facture{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        <a href="{{ path('facture_edit', {'id': facture.id}) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        <a href="{{ path('facture_pdf', {'id': facture.id}) }}" class="btn btn-danger">
+            <i class="bi bi-file-pdf"></i> Télécharger PDF
+        </a>
+        <form method="post" action="{{ path('facture_duplicate', {'id': facture.id}) }}" class="d-inline">
+            <button type="submit" class="btn btn-info">
+                <i class="bi bi-files"></i> Dupliquer
+            </button>
+        </form>
+        <a href="{{ path('facture_index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-receipt"></i> Facture {{ facture.reference }}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informations de la facture</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Référence :</dt>
+                            <dd class="col-sm-8"><strong>{{ facture.reference }}</strong></dd>
+                            
+                            <dt class="col-sm-4">Date :</dt>
+                            <dd class="col-sm-8">{{ facture.dateFacture|date('d/m/Y') }}</dd>
+                            
+                            <dt class="col-sm-4">Échéance :</dt>
+                            <dd class="col-sm-8">
+                                {% if facture.dateEcheance %}
+                                    {{ facture.dateEcheance|date('d/m/Y') }}
+                                {% else %}
+                                    <span class="text-muted">Non définie</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">État :</dt>
+                            <dd class="col-sm-8">
+                                {% set badge_class = facture.etat == 'Payée' ? 'success' : (facture.etat == 'Validée' ? 'primary' : 'secondary') %}
+                                <span class="badge bg-{{ badge_class }} status-badge">
+                                    {{ facture.etat }}
+                                </span>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Devise :</dt>
+                            <dd class="col-sm-8">{{ facture.devise }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Client</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Nom :</dt>
+                            <dd class="col-sm-8">
+                                <a href="{{ path('tiers_show', {'id': facture.client.id}) }}" class="text-decoration-none">
+                                    <strong>{{ facture.client.nom }}</strong>
+                                </a>
+                            </dd>
+                            
+                            {% if facture.client.email %}
+                                <dt class="col-sm-4">Email :</dt>
+                                <dd class="col-sm-8">
+                                    <a href="mailto:{{ facture.client.email }}" class="text-decoration-none">
+                                        <i class="bi bi-envelope"></i> {{ facture.client.email }}
+                                    </a>
+                                </dd>
+                            {% endif %}
+                            
+                            {% if facture.client.telephone %}
+                                <dt class="col-sm-4">Téléphone :</dt>
+                                <dd class="col-sm-8">
+                                    <a href="tel:{{ facture.client.telephone }}" class="text-decoration-none">
+                                        <i class="bi bi-telephone"></i> {{ facture.client.telephone }}
+                                    </a>
+                                </dd>
+                            {% endif %}
+                            
+                            {% if facture.client.numTva %}
+                                <dt class="col-sm-4">TVA :</dt>
+                                <dd class="col-sm-8"><code>{{ facture.client.numTva }}</code></dd>
+                            {% endif %}
+                        </dl>
+                    </div>
+                </div>
+                
+                {% if facture.notes %}
+                    <hr>
+                    <h6>Notes</h6>
+                    <p class="text-muted">{{ facture.notes|nl2br }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Lignes de facture -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul"></i> Lignes de facture
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if facture.lignes|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Désignation</th>
+                                    <th class="text-center">Quantité</th>
+                                    <th class="text-end">Prix unitaire</th>
+                                    <th class="text-center">TVA</th>
+                                    <th class="text-end">Total HT</th>
+                                    <th class="text-end">Total TTC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ligne in facture.lignes %}
+                                    <tr>
+                                        <td>{{ ligne.designation }}</td>
+                                        <td class="text-center">{{ ligne.quantite }}</td>
+                                        <td class="text-end">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                                        <td class="text-center">{{ ligne.tva }}%</td>
+                                        <td class="text-end">{{ ligne.getMontantHt()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                                        <td class="text-end">{{ ligne.getMontantTtc()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <th colspan="4">Total HT</th>
+                                    <th class="text-end">{{ facture.totalHt|number_format(2, ',', ' ') }} {{ facture.devise }}</th>
+                                    <td></td>
+                                </tr>
+                                <tr class="table-light">
+                                    <th colspan="4">Total TVA</th>
+                                    <th class="text-end">{{ facture.getTotalTva()|number_format(2, ',', ' ') }} {{ facture.devise }}</th>
+                                    <td></td>
+                                </tr>
+                                <tr class="table-primary">
+                                    <th colspan="4">Total TTC</th>
+                                    <th class="text-end">{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</th>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-list-ul text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Aucune ligne de facture</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Résumé financier -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-calculator"></i> Résumé financier
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total HT :</span>
+                    <strong>{{ facture.totalHt|number_format(2, ',', ' ') }} {{ facture.devise }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total TVA :</span>
+                    <strong>{{ facture.getTotalTva()|number_format(2, ',', ' ') }} {{ facture.devise }}</strong>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <span class="h5">Total TTC :</span>
+                    <strong class="h5 text-primary">{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear"></i> Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ path('facture_edit', {'id': facture.id}) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> Modifier la facture
+                    </a>
+                    <a href="{{ path('facture_pdf', {'id': facture.id}) }}" class="btn btn-danger">
+                        <i class="bi bi-file-pdf"></i> Télécharger PDF
+                    </a>
+                    <form method="post" action="{{ path('facture_duplicate', {'id': facture.id}) }}">
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="bi bi-files"></i> Dupliquer la facture
+                        </button>
+                    </form>
+                    <hr>
+                    <form method="post" action="{{ path('facture_delete', {'id': facture.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ facture.id) }}">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

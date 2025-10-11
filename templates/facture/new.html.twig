@@ -1,0 +1,300 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle facture - {{ parent() }}{% endblock %}
+{% block page_title %}Nouvelle facture{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('facture_index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour à la liste
+    </a>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-receipt"></i> Créer une nouvelle facture
+                </h5>
+            </div>
+            <div class="card-body">
+                {{ form_start(form, {'attr': {'novalidate': 'novalidate', 'id': 'facture-form'}}) }}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form_label(form.reference) }}
+                                {{ form_widget(form.reference) }}
+                                {{ form_errors(form.reference) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form_label(form.client) }}
+                                {{ form_widget(form.client) }}
+                                {{ form_errors(form.client) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form_label(form.dateFacture) }}
+                                {{ form_widget(form.dateFacture) }}
+                                {{ form_errors(form.dateFacture) }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form_label(form.dateEcheance) }}
+                                {{ form_widget(form.dateEcheance) }}
+                                {{ form_errors(form.dateEcheance) }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form_label(form.etat) }}
+                                {{ form_widget(form.etat) }}
+                                {{ form_errors(form.etat) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form_label(form.devise) }}
+                                {{ form_widget(form.devise) }}
+                                {{ form_errors(form.devise) }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.notes) }}
+                        {{ form_widget(form.notes) }}
+                        {{ form_errors(form.notes) }}
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5>Lignes de facture</h5>
+                    <div id="lignes-container" data-prototype="{{ form_widget(form.lignes.vars.prototype)|e('html_attr') }}">
+                        {% for ligne in form.lignes %}
+                            <div class="ligne-item border p-3 mb-3 rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            {{ form_label(ligne.designation) }}
+                                            {{ form_widget(ligne.designation) }}
+                                            {{ form_errors(ligne.designation) }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            {{ form_label(ligne.quantite) }}
+                                            {{ form_widget(ligne.quantite, {'attr': {'class': 'form-control quantite'}}) }}
+                                            {{ form_errors(ligne.quantite) }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            {{ form_label(ligne.prixUnitaire) }}
+                                            {{ form_widget(ligne.prixUnitaire, {'attr': {'class': 'form-control prix-unitaire'}}) }}
+                                            {{ form_errors(ligne.prixUnitaire) }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            {{ form_label(ligne.tva) }}
+                                            {{ form_widget(ligne.tva, {'attr': {'class': 'form-control tva'}}) }}
+                                            {{ form_errors(ligne.tva) }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <div class="mb-3">
+                                            <label class="form-label">Total</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control ligne-total" readonly>
+                                                <span class="input-group-text">{{ form.devise.vars.value }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-ligne">
+                                        <i class="bi bi-trash"></i> Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button type="button" id="add-ligne" class="btn btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> Ajouter une ligne
+                        </button>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Résumé</h6>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total HT :</span>
+                                        <span id="total-ht">0,00 {{ form.devise.vars.value }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Total TVA :</span>
+                                        <span id="total-tva">0,00 {{ form.devise.vars.value }}</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Total TTC :</strong>
+                                        <strong id="total-ttc">0,00 {{ form.devise.vars.value }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Créer la facture
+                        </button>
+                        <a href="{{ path('facture_index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lignesContainer = document.getElementById('lignes-container');
+    const addLigneBtn = document.getElementById('add-ligne');
+    const prototype = lignesContainer.dataset.prototype;
+    let index = lignesContainer.children.length;
+    
+    // Ajouter une ligne
+    addLigneBtn.addEventListener('click', function() {
+        const newForm = prototype.replace(/__name__/g, index);
+        const ligneDiv = document.createElement('div');
+        ligneDiv.className = 'ligne-item border p-3 mb-3 rounded';
+        ligneDiv.innerHTML = newForm;
+        
+        // Ajouter les classes et événements
+        const inputs = ligneDiv.querySelectorAll('input');
+        inputs[1].classList.add('quantite');
+        inputs[2].classList.add('prix-unitaire');
+        inputs[3].classList.add('tva');
+        
+        // Ajouter le champ total
+        const totalDiv = document.createElement('div');
+        totalDiv.className = 'col-md-2';
+        totalDiv.innerHTML = `
+            <div class="mb-3">
+                <label class="form-label">Total</label>
+                <div class="input-group">
+                    <input type="text" class="form-control ligne-total" readonly>
+                    <span class="input-group-text">MAD</span>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter le bouton supprimer
+        const deleteDiv = document.createElement('div');
+        deleteDiv.className = 'text-end';
+        deleteDiv.innerHTML = `
+            <button type="button" class="btn btn-sm btn-outline-danger remove-ligne">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        `;
+        
+        ligneDiv.querySelector('.row').appendChild(totalDiv);
+        ligneDiv.appendChild(deleteDiv);
+        
+        lignesContainer.appendChild(ligneDiv);
+        index++;
+        
+        // Attacher les événements
+        attachLigneEvents(ligneDiv);
+        updateTotaux();
+    });
+    
+    // Supprimer une ligne
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-ligne')) {
+            e.target.closest('.ligne-item').remove();
+            updateTotaux();
+        }
+    });
+    
+    // Calculer les totaux
+    function attachLigneEvents(ligneDiv) {
+        const quantite = ligneDiv.querySelector('.quantite');
+        const prixUnitaire = ligneDiv.querySelector('.prix-unitaire');
+        const tva = ligneDiv.querySelector('.tva');
+        const total = ligneDiv.querySelector('.ligne-total');
+        
+        [quantite, prixUnitaire, tva].forEach(input => {
+            input.addEventListener('input', function() {
+                calculateLigneTotal(ligneDiv);
+                updateTotaux();
+            });
+        });
+    }
+    
+    function calculateLigneTotal(ligneDiv) {
+        const quantite = parseFloat(ligneDiv.querySelector('.quantite').value) || 0;
+        const prixUnitaire = parseFloat(ligneDiv.querySelector('.prix-unitaire').value) || 0;
+        const tva = parseFloat(ligneDiv.querySelector('.tva').value) || 0;
+        
+        const totalHt = quantite * prixUnitaire;
+        const totalTva = totalHt * (tva / 100);
+        const totalTtc = totalHt + totalTva;
+        
+        ligneDiv.querySelector('.ligne-total').value = totalTtc.toFixed(2);
+    }
+    
+    function updateTotaux() {
+        let totalHt = 0;
+        let totalTva = 0;
+        
+        document.querySelectorAll('.ligne-item').forEach(ligne => {
+            const quantite = parseFloat(ligne.querySelector('.quantite').value) || 0;
+            const prixUnitaire = parseFloat(ligne.querySelector('.prix-unitaire').value) || 0;
+            const tva = parseFloat(ligne.querySelector('.tva').value) || 0;
+            
+            const ligneHt = quantite * prixUnitaire;
+            const ligneTva = ligneHt * (tva / 100);
+            
+            totalHt += ligneHt;
+            totalTva += ligneTva;
+        });
+        
+        const totalTtc = totalHt + totalTva;
+        
+        document.getElementById('total-ht').textContent = totalHt.toFixed(2).replace('.', ',') + ' MAD';
+        document.getElementById('total-tva').textContent = totalTva.toFixed(2).replace('.', ',') + ' MAD';
+        document.getElementById('total-ttc').textContent = totalTtc.toFixed(2).replace('.', ',') + ' MAD';
+    }
+    
+    // Attacher les événements aux lignes existantes
+    document.querySelectorAll('.ligne-item').forEach(attachLigneEvents);
+    
+    // Calculer les totaux initiaux
+    updateTotaux();
+});
+</script>
+{% endblock %}
+

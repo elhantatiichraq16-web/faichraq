@@ -1,0 +1,134 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ tiers.nom }} - {{ parent() }}{% endblock %}
+{% block page_title %}Détails du client{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        <a href="{{ path('tiers_edit', {'id': tiers.id}) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Modifier
+        </a>
+        <a href="{{ path('tiers_index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-person"></i> Informations du client
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Nom :</dt>
+                            <dd class="col-sm-8"><strong>{{ tiers.nom }}</strong></dd>
+                            
+                            <dt class="col-sm-4">Email :</dt>
+                            <dd class="col-sm-8">
+                                {% if tiers.email %}
+                                    <a href="mailto:{{ tiers.email }}" class="text-decoration-none">
+                                        <i class="bi bi-envelope"></i> {{ tiers.email }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Téléphone :</dt>
+                            <dd class="col-sm-8">
+                                {% if tiers.telephone %}
+                                    <a href="tel:{{ tiers.telephone }}" class="text-decoration-none">
+                                        <i class="bi bi-telephone"></i> {{ tiers.telephone }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Numéro TVA :</dt>
+                            <dd class="col-sm-8">
+                                {% if tiers.numTva %}
+                                    <code>{{ tiers.numTva }}</code>
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Nombre de factures :</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-primary">{{ tiers.factures|length }}</span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                {% if tiers.adresse %}
+                    <hr>
+                    <h6>Adresse :</h6>
+                    <p class="text-muted">{{ tiers.adresse|nl2br }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-receipt"></i> Factures récentes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if tiers.factures|length > 0 %}
+                    {% for facture in tiers.factures|slice(0, 5) %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <a href="{{ path('facture_show', {'id': facture.id}) }}" class="text-decoration-none">
+                                    {{ facture.reference }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ facture.dateFacture|date('d/m/Y') }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ facture.etat == 'Payée' ? 'success' : (facture.etat == 'Validée' ? 'primary' : 'secondary') }}">
+                                    {{ facture.etat }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</small>
+                            </div>
+                        </div>
+                        {% if not loop.last %}<hr class="my-2">{% endif %}
+                    {% endfor %}
+                    
+                    {% if tiers.factures|length > 5 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ path('facture_index', {'client': tiers.id}) }}" class="btn btn-sm btn-outline-primary">
+                                Voir toutes les factures
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-receipt text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">Aucune facture</p>
+                        <a href="{{ path('facture_new', {'client': tiers.id}) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle"></i> Créer une facture
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

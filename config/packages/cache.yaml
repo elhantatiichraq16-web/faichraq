@@ -1,0 +1,10 @@
+framework:
+    cache:
+        # The app.cache.pool service will be created automatically
+        app: cache.adapter.filesystem
+
+        # Uncomment the following lines to enable the cache pool
+        # pools:
+        #     my_cache_pool:
+        #         adapter: cache.adapter.filesystem
+
