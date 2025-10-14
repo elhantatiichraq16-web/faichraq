@@ -23,15 +23,20 @@ class ReferenceGenerator
         $derniereReference = $this->factureRepository->findDerniereReference();
 
         if ($derniereReference && strpos($derniereReference, "FAC-{$annee}-") === 0) {
-            // Extraire le numéro de la dernière référence
             $numero = (int) substr($derniereReference, -4);
             $nouveauNumero = $numero + 1;
         } else {
-            // Première facture de l'année
             $nouveauNumero = 1;
         }
 
-        return sprintf('FAC-%s-%04d', $annee, $nouveauNumero);
+        // Garantir l'unicité même en cas de concurrence ou fixtures existantes
+        do {
+            $reference = sprintf('FAC-%s-%04d', $annee, $nouveauNumero);
+            if (!$this->factureRepository->referenceExists($reference)) {
+                return $reference;
+            }
+            $nouveauNumero++;
+        } while (true);
     }
 }
 

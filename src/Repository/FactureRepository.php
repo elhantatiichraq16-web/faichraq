@@ -150,5 +150,18 @@ class FactureRepository extends ServiceEntityRepository
 
         return $result ? $result['reference'] : null;
     }
+
+    /**
+     * Vérifie l'existence d'une référence
+     */
+    public function referenceExists(string $reference): bool
+    {
+        return (bool) $this->createQueryBuilder('f')
+            ->select('COUNT(f.id)')
+            ->andWhere('f.reference = :ref')
+            ->setParameter('ref', $reference)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
 

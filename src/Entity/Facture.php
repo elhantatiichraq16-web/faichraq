@@ -7,8 +7,9 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
-#[ORM\Entity(repositoryClass: 'App\Repository\FactureRepository')]
+#[ORM\Entity(repositoryClass: 'App\\Repository\\FactureRepository')]
 #[ORM\Table(name: 'facture')]
 class Facture
 {
@@ -53,6 +54,7 @@ class Facture
     private ?string $notes = null;
 
     #[ORM\OneToMany(mappedBy: 'facture', targetEntity: LigneFacture::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC', 'id' => 'ASC'])]
     #[Assert\Valid]
     private Collection $lignes;
 
@@ -211,6 +213,10 @@ class Facture
         $totalTva = 0;
 
         foreach ($this->lignes as $ligne) {
+            // ignorer les sections dans les totaux
+            if (method_exists($ligne, 'isSection') && $ligne->isSection()) {
+                continue;
+            }
             $montantHt = $ligne->getQuantite() * $ligne->getPrixUnitaire();
             $montantTva = $montantHt * ($ligne->getTva() / 100);
             
@@ -234,6 +240,36 @@ class Facture
             self::ETAT_VALIDEE => self::ETAT_VALIDEE,
             self::ETAT_PAYEE => self::ETAT_PAYEE,
         ];
+    }
+
+    #[Assert\Callback]
+    public function validateBusinessRules(ExecutionContextInterface $context): void
+    {
+        // date d'échéance > date de facture si renseignée
+        if ($this->dateEcheance instanceof \DateTimeInterface && $this->dateFacture instanceof \DateTimeInterface) {
+            if ($this->dateEcheance <= $this->dateFacture) {
+                $context->buildViolation("La date d'échéance doit être postérieure à la date de facture.")
+                    ->atPath('dateEcheance')
+                    ->addViolation();
+            }
+        }
+
+        // désignations uniques (insensible à la casse/espaces)
+        $seenDesignations = [];
+        foreach ($this->lignes as $index => $ligne) {
+            $designation = trim((string) $ligne->getDesignation());
+            if ($designation === '') {
+                continue;
+            }
+            $key = mb_strtolower($designation);
+            if (isset($seenDesignations[$key])) {
+                $context->buildViolation('Chaque désignation de ligne doit être unique dans la facture.')
+                    ->atPath('lignes['.$index.'].designation')
+                    ->addViolation();
+            } else {
+                $seenDesignations[$key] = true;
+            }
+        }
     }
 }
 

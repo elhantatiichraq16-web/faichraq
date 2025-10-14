@@ -1,5 +1,10 @@
 {% extends 'base.html.twig' %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="/css/facture.css">
+{% endblock %}
+
 {% block title %}{{ facture.reference }} - {{ parent() }}{% endblock %}
 {% block page_title %}Détails de la facture{% endblock %}
 
@@ -11,13 +16,11 @@
         <a href="{{ path('facture_pdf', {'id': facture.id}) }}" class="btn btn-danger">
             <i class="bi bi-file-pdf"></i> Télécharger PDF
         </a>
-        <form method="post" action="{{ path('facture_duplicate', {'id': facture.id}) }}" class="d-inline">
-            <button type="submit" class="btn btn-info">
-                <i class="bi bi-files"></i> Dupliquer
-            </button>
-        </form>
         <a href="{{ path('facture_index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Retour
+        </a>
+        <a href="{{ path('facture_send_email', {'id': facture.id}) }}" class="btn btn-outline-primary">
+            <i class="bi bi-envelope"></i> Envoyer par mail
         </a>
     </div>
 {% endblock %}
@@ -209,13 +212,10 @@
                     <a href="{{ path('facture_pdf', {'id': facture.id}) }}" class="btn btn-danger">
                         <i class="bi bi-file-pdf"></i> Télécharger PDF
                     </a>
-                    <form method="post" action="{{ path('facture_duplicate', {'id': facture.id}) }}">
-                        <button type="submit" class="btn btn-info w-100">
-                            <i class="bi bi-files"></i> Dupliquer la facture
-                        </button>
-                    </form>
+                    {# bouton duplication retiré #}
                     <hr>
                     <form method="post" action="{{ path('facture_delete', {'id': facture.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')">
+                        <input type="hidden" name="_method" value="DELETE">
                         <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ facture.id) }}">
                         <button type="submit" class="btn btn-outline-danger w-100">
                             <i class="bi bi-trash"></i> Supprimer

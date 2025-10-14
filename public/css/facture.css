@@ -1,0 +1,33 @@
+/* Style personnalisé pour la facture à l'écran */
+.facture-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 32px;
+    margin-bottom: 32px;
+}
+.facture-header {
+    border-bottom: 2px solid #007bff;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+}
+.facture-header h1 {
+    color: #007bff;
+    font-size: 2rem;
+    margin: 0;
+}
+.facture-table th {
+    background: #007bff;
+    color: #fff;
+    font-weight: bold;
+}
+.facture-table td, .facture-table th {
+    border: 1px solid #dee2e6;
+    padding: 8px;
+}
+.facture-summary {
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 16px;
+    margin-top: 24px;
+}

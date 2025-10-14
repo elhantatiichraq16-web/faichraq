@@ -88,7 +88,9 @@
                     <hr>
                     
                     <h5>Lignes de facture</h5>
-                    <div id="lignes-container" data-prototype="{{ form_widget(form.lignes.vars.prototype)|e('html_attr') }}">
+                    <div id="lignes-container"
+                         data-prototype="{{ form_widget(form.lignes.vars.prototype)|e('html_attr') }}"
+                         data-index="{{ form.lignes|length }}">
                         {% for ligne in form.lignes %}
                             <div class="ligne-item border p-3 mb-3 rounded">
                                 <div class="row">
@@ -139,9 +141,12 @@
                         {% endfor %}
                     </div>
                     
-                    <div class="mb-3">
+                    <div class="d-flex gap-2 mb-3">
                         <button type="button" id="add-ligne" class="btn btn-outline-primary">
                             <i class="bi bi-plus-circle"></i> Ajouter une ligne
+                        </button>
+                        <button type="button" id="add-section" class="btn btn-outline-secondary">
+                            <i class="bi bi-layout-text-sidebar-reverse"></i> Ajouter une section
                         </button>
                     </div>
                     
@@ -186,121 +191,165 @@
 {% endblock %}
 
 {% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const lignesContainer = document.getElementById('lignes-container');
     const addLigneBtn = document.getElementById('add-ligne');
+    const addSectionBtn = document.getElementById('add-section');
     const prototype = lignesContainer.dataset.prototype;
-    let index = lignesContainer.children.length;
-    
-    // Ajouter une ligne
-    addLigneBtn.addEventListener('click', function() {
-        const newForm = prototype.replace(/__name__/g, index);
-        const ligneDiv = document.createElement('div');
-        ligneDiv.className = 'ligne-item border p-3 mb-3 rounded';
-        ligneDiv.innerHTML = newForm;
-        
-        // Ajouter les classes et événements
-        const inputs = ligneDiv.querySelectorAll('input');
-        inputs[1].classList.add('quantite');
-        inputs[2].classList.add('prix-unitaire');
-        inputs[3].classList.add('tva');
-        
-        // Ajouter le champ total
-        const totalDiv = document.createElement('div');
-        totalDiv.className = 'col-md-2';
-        totalDiv.innerHTML = `
-            <div class="mb-3">
-                <label class="form-label">Total</label>
-                <div class="input-group">
-                    <input type="text" class="form-control ligne-total" readonly>
-                    <span class="input-group-text">MAD</span>
-                </div>
-            </div>
-        `;
-        
-        // Ajouter le bouton supprimer
+    function getNextIndex() {
+        let i = parseInt(lignesContainer.getAttribute('data-index') || '0', 10);
+        lignesContainer.setAttribute('data-index', String(i + 1));
+        return i;
+    }
+
+    function selectField(root, suffix) {
+        return root.querySelector('[name$="[' + suffix + ']"], [name$="[' + suffix + '][]"]');
+    }
+
+    function decorateLine(ligneDiv, isSection) {
+        const quantite = selectField(ligneDiv, 'quantite');
+        const prixUnitaire = selectField(ligneDiv, 'prixUnitaire');
+        const tva = selectField(ligneDiv, 'tva');
+        const isSectionChk = selectField(ligneDiv, 'isSection');
+        let designation = selectField(ligneDiv, 'designation');
+
+        function hideField(inputEl) {
+            if (!inputEl) return;
+            const col = inputEl.closest('.col-md-2') || inputEl.closest('.col') || inputEl.parentElement;
+            if (col) col.classList.add('d-none');
+        }
+        function showField(inputEl) {
+            if (!inputEl) return;
+            const col = inputEl.closest('.col-md-2') || inputEl.closest('.col') || inputEl.parentElement;
+            if (col) col.classList.remove('d-none');
+        }
+
+        // total
+        let totalInput = ligneDiv.querySelector('.ligne-total');
+        if (!totalInput && !isSection) {
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'col-md-2';
+            totalDiv.innerHTML = `
+                <div class=\"mb-3\">\n                    <label class=\"form-label\">Total</label>\n                    <div class=\"input-group\">\n                        <input type=\"text\" class=\"form-control ligne-total\" readonly>\n                        <span class=\"input-group-text\">MAD</span>\n                    </div>\n                </div>
+            `;
+            ligneDiv.querySelector('.row').appendChild(totalDiv);
+            totalInput = totalDiv.querySelector('.ligne-total');
+        }
+
+        // remove/add delete button
+        let deleteBtnWrapper = ligneDiv.querySelector('.remove-ligne')?.closest('.text-end');
+        if (deleteBtnWrapper) deleteBtnWrapper.remove();
         const deleteDiv = document.createElement('div');
         deleteDiv.className = 'text-end';
         deleteDiv.innerHTML = `
-            <button type="button" class="btn btn-sm btn-outline-danger remove-ligne">
-                <i class="bi bi-trash"></i> Supprimer
-            </button>
+            <button type=\"button\" class=\"btn btn-sm btn-outline-danger remove-ligne\">\n                <i class=\"bi bi-trash\"></i> Supprimer\n            </button>
         `;
-        
-        ligneDiv.querySelector('.row').appendChild(totalDiv);
         ligneDiv.appendChild(deleteDiv);
-        
-        lignesContainer.appendChild(ligneDiv);
-        index++;
-        
-        // Attacher les événements
-        attachLigneEvents(ligneDiv);
-        updateTotaux();
-    });
-    
-    // Supprimer une ligne
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-ligne')) {
-            e.target.closest('.ligne-item').remove();
-            updateTotaux();
+
+        if (isSection) {
+            if (isSectionChk) isSectionChk.checked = true;
+            ligneDiv.classList.add('bg-light');
+            if (quantite) { quantite.value = 0; hideField(quantite); }
+            if (prixUnitaire) { prixUnitaire.value = 0; hideField(prixUnitaire); }
+            if (tva) { tva.value = 0; hideField(tva); }
+            if (totalInput) totalInput.closest('.col-md-2')?.remove();
+
+            // Désignation => textarea
+            if (designation && designation.tagName !== 'TEXTAREA') {
+                const textarea = document.createElement('textarea');
+                textarea.name = designation.name;
+                textarea.id = designation.id;
+                textarea.className = 'form-control';
+                textarea.rows = 2;
+                textarea.placeholder = 'Titre de section';
+                textarea.value = designation.value || '';
+                designation.replaceWith(textarea);
+                designation = textarea;
+            }
+        } else {
+            if (isSectionChk) isSectionChk.checked = false;
+            ligneDiv.classList.remove('bg-light');
+            if (quantite) { showField(quantite); quantite.classList.add('quantite'); }
+            if (prixUnitaire) { showField(prixUnitaire); prixUnitaire.classList.add('prix-unitaire'); }
+            if (tva) { showField(tva); tva.classList.add('tva'); }
+
+            // textarea => input
+            if (designation && designation.tagName === 'TEXTAREA') {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.name = designation.name;
+                input.id = designation.id;
+                input.className = 'form-control';
+                input.placeholder = 'Description du produit/service';
+                input.value = designation.value || '';
+                designation.replaceWith(input);
+                designation = input;
+            }
         }
-    });
-    
-    // Calculer les totaux
-    function attachLigneEvents(ligneDiv) {
-        const quantite = ligneDiv.querySelector('.quantite');
-        const prixUnitaire = ligneDiv.querySelector('.prix-unitaire');
-        const tva = ligneDiv.querySelector('.tva');
-        const total = ligneDiv.querySelector('.ligne-total');
-        
-        [quantite, prixUnitaire, tva].forEach(input => {
-            input.addEventListener('input', function() {
-                calculateLigneTotal(ligneDiv);
-                updateTotaux();
-            });
-        });
+
+        [selectField(ligneDiv, 'quantite'), selectField(ligneDiv, 'prixUnitaire'), selectField(ligneDiv, 'tva')]
+            .filter(Boolean)
+            .forEach(input => input.addEventListener('input', () => { calculateLigneTotal(ligneDiv); updateTotaux(); }));
     }
-    
+
+    function createItem(isSection) {
+        const newForm = prototype.replace(/__name__/g, getNextIndex());
+        const ligneDiv = document.createElement('div');
+        ligneDiv.className = 'ligne-item border p-3 mb-3 rounded';
+        ligneDiv.innerHTML = newForm;
+        decorateLine(ligneDiv, isSection);
+        lignesContainer.appendChild(ligneDiv);
+        calculateLigneTotal(ligneDiv);
+        updateTotaux();
+    }
+
     function calculateLigneTotal(ligneDiv) {
-        const quantite = parseFloat(ligneDiv.querySelector('.quantite').value) || 0;
-        const prixUnitaire = parseFloat(ligneDiv.querySelector('.prix-unitaire').value) || 0;
-        const tva = parseFloat(ligneDiv.querySelector('.tva').value) || 0;
-        
-        const totalHt = quantite * prixUnitaire;
+        const isSectionChk = selectField(ligneDiv, 'isSection');
+        if (isSectionChk && isSectionChk.checked) return;
+        const q = parseFloat((selectField(ligneDiv, 'quantite')?.value || '0')) || 0;
+        const pu = parseFloat((selectField(ligneDiv, 'prixUnitaire')?.value || '0')) || 0;
+        const tva = parseFloat((selectField(ligneDiv, 'tva')?.value || '0')) || 0;
+        const totalHt = q * pu;
         const totalTva = totalHt * (tva / 100);
         const totalTtc = totalHt + totalTva;
-        
-        ligneDiv.querySelector('.ligne-total').value = totalTtc.toFixed(2);
+        const totalInput = ligneDiv.querySelector('.ligne-total');
+        if (totalInput) totalInput.value = totalTtc.toFixed(2);
     }
-    
+
     function updateTotaux() {
         let totalHt = 0;
         let totalTva = 0;
-        
-        document.querySelectorAll('.ligne-item').forEach(ligne => {
-            const quantite = parseFloat(ligne.querySelector('.quantite').value) || 0;
-            const prixUnitaire = parseFloat(ligne.querySelector('.prix-unitaire').value) || 0;
-            const tva = parseFloat(ligne.querySelector('.tva').value) || 0;
-            
-            const ligneHt = quantite * prixUnitaire;
-            const ligneTva = ligneHt * (tva / 100);
-            
-            totalHt += ligneHt;
-            totalTva += ligneTva;
+        lignesContainer.querySelectorAll('.ligne-item').forEach(ligne => {
+            const isSection = selectField(ligne, 'isSection')?.checked;
+            if (isSection) return;
+            const q = parseFloat((selectField(ligne, 'quantite')?.value || '0')) || 0;
+            const pu = parseFloat((selectField(ligne, 'prixUnitaire')?.value || '0')) || 0;
+            const t = parseFloat((selectField(ligne, 'tva')?.value || '0')) || 0;
+            const ht = q * pu;
+            totalHt += ht;
+            totalTva += ht * (t / 100);
         });
-        
         const totalTtc = totalHt + totalTva;
-        
         document.getElementById('total-ht').textContent = totalHt.toFixed(2).replace('.', ',') + ' MAD';
         document.getElementById('total-tva').textContent = totalTva.toFixed(2).replace('.', ',') + ' MAD';
         document.getElementById('total-ttc').textContent = totalTtc.toFixed(2).replace('.', ',') + ' MAD';
     }
-    
-    // Attacher les événements aux lignes existantes
-    document.querySelectorAll('.ligne-item').forEach(attachLigneEvents);
-    
-    // Calculer les totaux initiaux
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-ligne')) {
+            e.preventDefault();
+            e.target.closest('.ligne-item').remove();
+            updateTotaux();
+        }
+    });
+    addLigneBtn.addEventListener('click', (e) => { e.preventDefault(); createItem(false); });
+    addSectionBtn.addEventListener('click', (e) => { e.preventDefault(); createItem(true); });
+
+    Sortable.create(lignesContainer, { animation: 150, onEnd: () => updateTotaux() });
+
+    lignesContainer.querySelectorAll('.ligne-item').forEach(div => decorateLine(div, selectField(div, 'isSection')?.checked));
     updateTotaux();
 });
 </script>

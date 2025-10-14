@@ -1,284 +1,242 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Facture {{ facture.reference }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 20px;
-        }
-        
-        .company-info {
-            flex: 1;
-        }
-        
-        .company-info h1 {
-            color: #007bff;
-            margin: 0 0 10px 0;
-            font-size: 24px;
-        }
-        
-        .invoice-info {
-            text-align: right;
-            flex: 1;
-        }
-        
-        .invoice-info h2 {
-            color: #007bff;
-            margin: 0 0 10px 0;
-            font-size: 20px;
-        }
-        
-        .client-info {
-            margin-bottom: 30px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        
-        .client-info h3 {
-            margin: 0 0 10px 0;
-            color: #007bff;
-        }
-        
-        .invoice-details {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-        }
-        
-        .invoice-details .detail-group {
-            flex: 1;
-            margin-right: 20px;
-        }
-        
-        .invoice-details .detail-group:last-child {
-            margin-right: 0;
-        }
-        
-        .detail-group h4 {
-            margin: 0 0 10px 0;
-            color: #007bff;
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 5px;
-        }
-        
-        .detail-group p {
-            margin: 5px 0;
-        }
-        
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        
-        .items-table th,
-        .items-table td {
-            border: 1px solid #dee2e6;
-            padding: 8px;
-            text-align: left;
-        }
-        
-        .items-table th {
-            background-color: #007bff;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .items-table .text-right {
-            text-align: right;
-        }
-        
-        .items-table .text-center {
-            text-align: center;
-        }
-        
-        .totals {
-            width: 100%;
-            max-width: 300px;
-            margin-left: auto;
-        }
-        
-        .totals table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .totals td {
-            padding: 5px 10px;
-            border: none;
-        }
-        
-        .totals .total-label {
-            text-align: right;
-            font-weight: bold;
-        }
-        
-        .totals .total-amount {
-            text-align: right;
-        }
-        
-        .totals .grand-total {
-            border-top: 2px solid #007bff;
-            font-size: 14px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        
-        .notes {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        
-        .notes h4 {
-            margin: 0 0 10px 0;
-            color: #007bff;
-        }
-        
-        .footer {
-            margin-top: 50px;
-            text-align: center;
-            font-size: 10px;
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
-            padding-top: 20px;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .status-brouillon {
-            background-color: #6c757d;
-            color: white;
-        }
-        
-        .status-validee {
-            background-color: #007bff;
-            color: white;
-        }
-        
-        .status-payee {
-            background-color: #28a745;
-            color: white;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Facture {{ facture.reference }}</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        font-size: 13px;
+        color: #222;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+    }
+
+    .facture-container {
+        max-width: 900px;
+        margin: 40px auto;
+        display: flex;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .facture-aside {
+        width: 10px;
+        background: #007bff;
+    }
+
+    .facture-main {
+        padding: 30px 40px;
+        flex: 1;
+    }
+
+    /* HEADER */
+    .facture-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 30px;
+    }
+    .facture-logo {
+        font-size: 32px;
+        font-weight: 900;
+        color: #007bff;
+    }
+    .facture-logo span {
+        color: #c2185b;
+        font-style: italic;
+    }
+    .facture-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #222;
+        text-align: right;
+    }
+    .facture-meta {
+        font-size: 13px;
+        color: #555;
+        text-align: right;
+        margin-top: 8px;
+    }
+
+    /* INFOS */
+    .facture-infos {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 24px;
+    }
+    .facture-infos .block strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #007bff;
+    }
+
+    /* TABLEAU DES LIGNES */
+    .facture-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 12px;
+    }
+    .facture-table th {
+        background: #007bff;
+        color: #fff;
+        font-weight: bold;
+        padding: 10px 8px;
+        text-align: left;
+    }
+    .facture-table td {
+        border: 1px solid #dee2e6;
+        padding: 8px;
+    }
+    .facture-table .text-right { text-align: right; }
+    .facture-table .text-center { text-align: center; }
+
+    /* TABLEAU DES TOTALS EN BAS */
+    .facture-summary {
+        width: 300px;
+        border-collapse: collapse;
+        background: #f0f8ff;
+        border-radius: 8px;
+        float: right;
+        margin-top: 10px;
+    }
+    .facture-summary td {
+        padding: 7px 12px;
+    }
+    .facture-summary .label { font-weight: 600; }
+    .facture-summary .total {
+        font-weight: bold;
+        font-size: 16px;
+        border-top: 2px solid #007bff;
+    }
+
+    /* RÈGLEMENT */
+    .facture-reglement {
+        font-size: 13px;
+        color: #222;
+        padding: 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 18px;
+        clear: both; /* pour que le règlement ne soit pas à côté du tableau des totaux */
+    }
+
+    /* NOTES */
+    .facture-notes {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 18px;
+    }
+
+    /* FOOTER */
+    .facture-footer {
+        font-size: 11px;
+        color: #aaa;
+        text-align: center;
+        margin-top: 24px;
+    }
+</style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-info">
-            <h1>{{ app_name }}</h1>
-            <p><strong>Adresse :</strong> 123 Rue de l'Exemple<br>10000 Casablanca, Maroc</p>
-            <p><strong>Téléphone :</strong> +212 5XX XXX XXX</p>
-            <p><strong>Email :</strong> contact@exemple.ma</p>
+<div class="facture-container">
+
+    <div class="facture-aside"></div>
+
+    <div class="facture-main">
+        <!-- HEADER -->
+        <div class="facture-header">
+            <div class="facture-logo">B/<span>I</span></div>
+            <div>
+                <div class="facture-title">FACTURE</div>
+                <div class="facture-meta">
+                    DATE : {{ facture.dateFacture|date('d/m/Y') }}<br>
+                    ÉCHÉANCE : {{ facture.dateEcheance ? facture.dateEcheance|date('d/m/Y') : '-' }}<br>
+                    FACTURE N° : {{ facture.reference }}
+                </div>
+            </div>
         </div>
-        <div class="invoice-info">
-            <h2>FACTURE</h2>
-            <p><strong>Référence :</strong> {{ facture.reference }}</p>
-            <p><strong>Date :</strong> {{ facture.dateFacture|date('d/m/Y') }}</p>
-            {% if facture.dateEcheance %}
-                <p><strong>Échéance :</strong> {{ facture.dateEcheance|date('d/m/Y') }}</p>
-            {% endif %}
-            <p><strong>État :</strong> 
-                <span class="status-badge status-{{ facture.etat|lower }}">
-                    {{ facture.etat }}
-                </span>
-            </p>
+
+        <!-- INFOS -->
+        <div class="facture-infos">
+            <div class="block">
+                <strong>ÉMETTEUR :</strong>
+                <div>123-456-7890</div>
+                <div>hello@reallygreatsite.com</div>
+                <div>123 Anywhere St,<br>Any City ST 12345</div>
+            </div>
+            <div class="block">
+                <strong>DESTINATAIRE :</strong>
+                <div>{{ facture.client.nom }}</div>
+                <div>{{ facture.client.email }}</div>
+                <div>{{ facture.client.adresse|nl2br }}</div>
+            </div>
         </div>
-    </div>
-    
-    <div class="client-info">
-        <h3>Facturé à :</h3>
-        <p><strong>{{ facture.client.nom }}</strong></p>
-        {% if facture.client.adresse %}
-            <p>{{ facture.client.adresse|nl2br }}</p>
-        {% endif %}
-        {% if facture.client.email %}
-            <p><strong>Email :</strong> {{ facture.client.email }}</p>
-        {% endif %}
-        {% if facture.client.telephone %}
-            <p><strong>Téléphone :</strong> {{ facture.client.telephone }}</p>
-        {% endif %}
-        {% if facture.client.numTva %}
-            <p><strong>N° TVA :</strong> {{ facture.client.numTva }}</p>
-        {% endif %}
-    </div>
-    
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th>Désignation</th>
-                <th class="text-center">Quantité</th>
-                <th class="text-right">Prix unitaire</th>
-                <th class="text-center">TVA</th>
-                <th class="text-right">Total HT</th>
-                <th class="text-right">Total TTC</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ligne in facture.lignes %}
+
+        <!-- TABLEAU DES LIGNES -->
+        <table class="facture-table">
+            <thead>
                 <tr>
-                    <td>{{ ligne.designation }}</td>
-                    <td class="text-center">{{ ligne.quantite }}</td>
-                    <td class="text-right">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
-                    <td class="text-center">{{ ligne.tva }}%</td>
-                    <td class="text-right">{{ ligne.getMontantHt()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
-                    <td class="text-right">{{ ligne.getMontantTtc()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                    <th>Description</th>
+                    <th class="text-right">Prix Unitaire</th>
+                    <th class="text-center">Quantité</th>
+                    <th class="text-right">Total</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <div class="totals">
-        <table>
+            </thead>
+            <tbody>
+                {% for ligne in facture.lignes %}
+                    <tr>
+                        <td>{{ ligne.designation }}</td>
+                        <td class="text-right">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                        <td class="text-center">{{ ligne.quantite }}</td>
+                        <td class="text-right">{{ ligne.getMontantTtc()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- TABLEAU DES TOTALS EN BAS -->
+        <table class="facture-summary">
             <tr>
-                <td class="total-label">Total HT :</td>
-                <td class="total-amount">{{ facture.totalHt|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                <td class="label">TOTAL HT :</td>
+                <td>{{ facture.totalHt|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
             </tr>
             <tr>
-                <td class="total-label">Total TVA :</td>
-                <td class="total-amount">{{ facture.getTotalTva()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+                <td class="label">TVA :</td>
+                <td>{{ facture.getTotalTva()|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
             </tr>
-            <tr class="grand-total">
-                <td class="total-label">Total TTC :</td>
-                <td class="total-amount">{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
+            <tr>
+                <td class="label">REMISE :</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td class="label total">TOTAL TTC :</td>
+                <td class="total">{{ facture.totalTtc|number_format(2, ',', ' ') }} {{ facture.devise }}</td>
             </tr>
         </table>
-    </div>
-    
-    {% if facture.notes %}
-        <div class="notes">
-            <h4>Notes :</h4>
-            <p>{{ facture.notes|nl2br }}</p>
+
+        <!-- RÈGLEMENT -->
+        <div class="facture-reglement">
+            <strong>RÈGLEMENT :</strong><br>
+            Par virement bancaire :<br>
+            Banque : Rimberio<br>
+            Compte : 123-456-7890
         </div>
-    {% endif %}
-    
-    <div class="footer">
-        <p>Merci pour votre confiance !</p>
-        <p>Cette facture a été générée automatiquement le {{ "now"|date('d/m/Y à H:i') }}</p>
+
+        <!-- NOTES -->
+        <div class="facture-notes">
+            En cas de retard de paiement, une indemnité de 10% par jour de retard ainsi que des frais de recouvrement de 40 euros seront exigibles.<br>
+            Conditions générales de vente consultables sur le site : www.reallygreatsite.com
+        </div>
+
+        <!-- FOOTER -->
+        <div class="facture-footer">
+            Merci pour votre confiance !<br>
+            Cette facture a été générée automatiquement le {{ "now"|date('d/m/Y à H:i') }}
+        </div>
     </div>
+
+</div>
 </body>
 </html>
-

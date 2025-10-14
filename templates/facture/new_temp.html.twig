@@ -85,7 +85,7 @@
                          data-index="{{ form.lignes|length }}">
                         {% for ligne in form.lignes %}
                             <div class="ligne-item border p-3 mb-3 rounded">
-                                <div class="row">
+                                <div class="row align-items-end">
                                     <div class="col-md-4">
                                         <div class="mb-3">
                                             {{ form_label(ligne.designation) }}
@@ -93,7 +93,7 @@
                                             {{ form_errors(ligne.designation) }}
                                         </div>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1">
                                         <div class="mb-3">
                                             {{ form_label(ligne.quantite) }}
                                             {{ form_widget(ligne.quantite, {'attr': {'class': 'form-control quantite'}}) }}
@@ -107,27 +107,36 @@
                                             {{ form_errors(ligne.prixUnitaire) }}
                                         </div>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1">
                                         <div class="mb-3">
                                             {{ form_label(ligne.tva) }}
                                             {{ form_widget(ligne.tva, {'attr': {'class': 'form-control tva'}}) }}
                                             {{ form_errors(ligne.tva) }}
                                         </div>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1">
+                                        <div class="mb-3">
+                                            {{ form_label(ligne.remise) }}
+                                            {{ form_widget(ligne.remise, {'attr': {'class': 'form-control remise'}}) }}
+                                            {{ form_errors(ligne.remise) }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-1">
                                         <div class="mb-3">
                                             <label class="form-label">Total</label>
                                             <div class="input-group">
                                                 <input type="text" class="form-control ligne-total" readonly>
-                                                <span class="input-group-text">{{ form.devise.vars.value }}</span>
+                                                <span class="input-group-text">MAD</span>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="text-end">
-                                    <button type="button" class="btn btn-sm btn-outline-danger remove-ligne">
-                                        <i class="bi bi-trash"></i> Supprimer
-                                    </button>
+                                    <div class="col-md-1">
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-ligne w-100">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         {% endfor %}
@@ -151,16 +160,20 @@
                                     <h6>Résumé</h6>
                                     <div class="d-flex justify-content-between">
                                         <span>Total HT :</span>
-                                        <span id="total-ht">0,00 {{ form.devise.vars.value }}</span>
+                                        <span id="total-ht">0,00 MAD</span>
                                     </div>
                                     <div class="d-flex justify-content-between">
                                         <span>Total TVA :</span>
-                                        <span id="total-tva">0,00 {{ form.devise.vars.value }}</span>
+                                        <span id="total-tva">0,00 MAD</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Remise :</span>
+                                        <span id="total-remise">0,00 MAD</span>
                                     </div>
                                     <hr>
                                     <div class="d-flex justify-content-between">
                                         <strong>Total TTC :</strong>
-                                        <strong id="total-ttc">0,00 {{ form.devise.vars.value }}</strong>
+                                        <strong id="total-ttc">0,00 MAD</strong>
                                     </div>
                                 </div>
                             </div>
@@ -207,102 +220,110 @@ document.addEventListener('DOMContentLoaded', function() {
         const quantite = selectField(ligneDiv, 'quantite');
         const prixUnitaire = selectField(ligneDiv, 'prixUnitaire');
         const tva = selectField(ligneDiv, 'tva');
+        const remise = selectField(ligneDiv, 'remise');
         const isSectionChk = selectField(ligneDiv, 'isSection');
 
-        function hideField(inputEl) {
-            if (!inputEl) return;
-            const col = inputEl.closest('.col-md-2') || inputEl.closest('.col') || inputEl.parentElement;
-            if (col) col.classList.add('d-none');
-        }
-        function showField(inputEl) {
-            if (!inputEl) return;
-            const col = inputEl.closest('.col-md-2') || inputEl.closest('.col') || inputEl.parentElement;
-            if (col) col.classList.remove('d-none');
-        }
-
-        // total
-        let totalInput = ligneDiv.querySelector('.ligne-total');
-        if (!totalInput && !isSection) {
-            const totalDiv = document.createElement('div');
-            totalDiv.className = 'col-md-2';
-            totalDiv.innerHTML = `
-                <div class="mb-3">
-                    <label class="form-label">Total</label>
-                    <div class="input-group">
-                        <input type="text" class="form-control ligne-total" readonly>
-                        <span class="input-group-text">MAD</span>
+        // Reconstruire complètement la structure HTML
+        ligneDiv.innerHTML = '';
+        
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row align-items-end';
+        
+        if (isSection) {
+            // Structure pour une section
+            rowDiv.innerHTML = `
+                <div class="col-md-10">
+                    <div class="mb-3">
+                        <label class="form-label">Désignation</label>
+                        <textarea name="${designation ? designation.name : ''}" id="${designation ? designation.id : ''}" class="form-control" rows="2" placeholder="Titre de section">${designation ? designation.value || '' : ''}</textarea>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-ligne w-100">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;
-            console.log( totalDiv);
-            
-            ligneDiv.querySelector('.row').appendChild(totalDiv);
-            totalInput = totalDiv.querySelector('.ligne-total');
-        }
-
-        // supprimer bouton existant puis reposer
-        let deleteBtnWrapper = ligneDiv.querySelector('.remove-ligne')?.closest('.text-end');
-        if (deleteBtnWrapper) deleteBtnWrapper.remove();
-        const deleteDiv = document.createElement('div');
-        deleteDiv.className = 'text-end';
-        deleteDiv.innerHTML = `
-            <button type="button" class="btn btn-sm btn-outline-danger remove-ligne">
-                <i class="bi bi-trash"></i> Supprimer
-            </button>
-        `;
-        ligneDiv.appendChild(deleteDiv);
-
-        // section vs ligne
-        if (isSection) {
-            if (isSectionChk) isSectionChk.checked = true;
             ligneDiv.classList.add('bg-light');
-            if (quantite) { quantite.value = 0; hideField(quantite); }
-            if (prixUnitaire) { prixUnitaire.value = 0; hideField(prixUnitaire); }
-            if (tva) { tva.value = 0; hideField(tva); }
-            if (totalInput) totalInput.closest('.col-md-2')?.remove();
-
-            // Transformer Désignation en zone de texte (textarea) pour les sections
-            if (designation && designation.tagName !== 'TEXTAREA') {
-                const textarea = document.createElement('textarea');
-                textarea.name = designation.name;
-                textarea.id = designation.id;
-                textarea.className = 'form-control';
-                textarea.rows = 2;
-                textarea.placeholder = 'Titre de section';
-                textarea.value = designation.value || '';
-                designation.replaceWith(textarea);
-                designation = textarea;
-            }
         } else {
-            if (isSectionChk) isSectionChk.checked = false;
+            // Structure pour une ligne normale
+            rowDiv.innerHTML = `
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Désignation</label>
+                        <input type="text" name="${designation ? designation.name : ''}" id="${designation ? designation.id : ''}" class="form-control" placeholder="Description du produit/service" value="${designation ? designation.value || '' : ''}">
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="mb-3">
+                        <label class="form-label">Quantité</label>
+                        <input type="number" name="${quantite ? quantite.name : ''}" id="${quantite ? quantite.id : ''}" class="form-control quantite" value="${quantite ? quantite.value || '' : ''}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        <label class="form-label">Prix unitaire</label>
+                        <input type="number" name="${prixUnitaire ? prixUnitaire.name : ''}" id="${prixUnitaire ? prixUnitaire.id : ''}" class="form-control prix-unitaire" step="0.01" value="${prixUnitaire ? prixUnitaire.value || '' : ''}">
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="mb-3">
+                        <label class="form-label">TVA (%)</label>
+                        <input type="number" name="${tva ? tva.name : ''}" id="${tva ? tva.id : ''}" class="form-control tva" step="0.01" value="${tva ? tva.value || '' : ''}">
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="mb-3">
+                        <label class="form-label">Remise (%)</label>
+                        <input type="number" name="${remise ? remise.name : ''}" id="${remise ? remise.id : ''}" class="form-control remise" step="0.01" value="${remise ? remise.value || '0' : '0'}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        <label class="form-label">Total</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control ligne-total" readonly>
+                            <span class="input-group-text">MAD</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-ligne w-100">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
             ligneDiv.classList.remove('bg-light');
-            if (quantite) { showField(quantite); quantite.classList.add('quantite'); }
-            if (prixUnitaire) { showField(prixUnitaire); prixUnitaire.classList.add('prix-unitaire'); }
-            if (tva) { showField(tva); tva.classList.add('tva'); }
-
-            // Rebasculer en input texte pour les lignes normales
-            if (designation && designation.tagName === 'TEXTAREA') {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.name = designation.name;
-                input.id = designation.id;
-                input.className = 'form-control';
-                input.placeholder = 'Description du produit/service';
-                input.value = designation.value || '';
-                designation.replaceWith(input);
-                designation = input;
-            }
         }
+        
+        ligneDiv.appendChild(rowDiv);
+
+        // Ajouter la case à cocher isSection si elle n'existe pas
+        if (isSectionChk) {
+            isSectionChk.checked = isSection;
+        } else {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'facture[lignes][__name__][isSection]';
+            hiddenInput.value = isSection ? '1' : '0';
+            ligneDiv.appendChild(hiddenInput);
+        }
+
+        // Mettre à jour les références aux champs
+        const newDesignation = ligneDiv.querySelector('input[name$="[designation]"], textarea[name$="[designation]"]');
+        const newQuantite = ligneDiv.querySelector('input[name$="[quantite]"]');
+        const newPrixUnitaire = ligneDiv.querySelector('input[name$="[prixUnitaire]"]');
+        const newTva = ligneDiv.querySelector('input[name$="[tva]"]');
+        const newRemise = ligneDiv.querySelector('input[name$="[remise]"]');
 
         // events
-        [selectField(ligneDiv, 'quantite'), selectField(ligneDiv, 'prixUnitaire'), selectField(ligneDiv, 'tva')]
+        [newQuantite, newPrixUnitaire, newTva, newRemise]
             .filter(Boolean)
             .forEach(input => input.addEventListener('input', () => { calculateLigneTotal(ligneDiv); updateTotaux(); }));
-        // toggle when user clicks the checkbox
-        if (isSectionChk && !isSectionChk._boundToggle) {
-            isSectionChk.addEventListener('change', () => decorateLine(ligneDiv, !!isSectionChk.checked));
-            isSectionChk._boundToggle = true;
-        }
     }
 
     function createItem(isSection) {
@@ -322,9 +343,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const q = parseFloat((selectField(ligneDiv, 'quantite')?.value || '0')) || 0;
         const pu = parseFloat((selectField(ligneDiv, 'prixUnitaire')?.value || '0')) || 0;
         const tva = parseFloat((selectField(ligneDiv, 'tva')?.value || '0')) || 0;
+        const remise = parseFloat((selectField(ligneDiv, 'remise')?.value || '0')) || 0;
+        
         const totalHt = q * pu;
-        const totalTva = totalHt * (tva / 100);
-        const totalTtc = totalHt + totalTva;
+        const montantRemise = totalHt * (remise / 100);
+        const totalHtApresRemise = totalHt - montantRemise;
+        const totalTva = totalHtApresRemise * (tva / 100);
+        const totalTtc = totalHtApresRemise + totalTva;
+        
         const totalInput = ligneDiv.querySelector('.ligne-total');
         if (totalInput) totalInput.value = totalTtc.toFixed(2);
     }
@@ -332,19 +358,27 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateTotaux() {
         let totalHt = 0;
         let totalTva = 0;
+        let totalRemise = 0;
         lignesContainer.querySelectorAll('.ligne-item').forEach(ligne => {
             const isSection = selectField(ligne, 'isSection')?.checked;
             if (isSection) return;
             const q = parseFloat((selectField(ligne, 'quantite')?.value || '0')) || 0;
             const pu = parseFloat((selectField(ligne, 'prixUnitaire')?.value || '0')) || 0;
             const t = parseFloat((selectField(ligne, 'tva')?.value || '0')) || 0;
+            const remise = parseFloat((selectField(ligne, 'remise')?.value || '0')) || 0;
+            
             const ht = q * pu;
-            totalHt += ht;
-            totalTva += ht * (t / 100);
+            const montantRemise = ht * (remise / 100);
+            const htApresRemise = ht - montantRemise;
+            
+            totalHt += htApresRemise;
+            totalTva += htApresRemise * (t / 100);
+            totalRemise += montantRemise;
         });
         const totalTtc = totalHt + totalTva;
         document.getElementById('total-ht').textContent = totalHt.toFixed(2).replace('.', ',') + ' MAD';
         document.getElementById('total-tva').textContent = totalTva.toFixed(2).replace('.', ',') + ' MAD';
+        document.getElementById('total-remise').textContent = totalRemise.toFixed(2).replace('.', ',') + ' MAD';
         document.getElementById('total-ttc').textContent = totalTtc.toFixed(2).replace('.', ',') + ' MAD';
     }
 

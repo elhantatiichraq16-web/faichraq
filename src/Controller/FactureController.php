@@ -1,6 +1,12 @@
 <?php
 
+
+
 namespace App\Controller;
+
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+
 
 use App\Entity\Facture;
 use App\Entity\LigneFacture;
@@ -20,6 +26,38 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/facture')]
 class FactureController extends AbstractController
 {
+    // ...existing code...
+
+    #[Route('/{id}/send-email', name: 'facture_send_email', methods: ['GET'])]
+    public function sendEmail(Facture $facture, MailerInterface $mailer): Response
+    {
+        // Générer le PDF en mémoire
+        $html = $this->renderView('facture/pdf.html.twig', [
+            'facture' => $facture,
+        ]);
+        $options = new Options();
+        $options->set('defaultFont', 'Arial');
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        $pdfOutput = $dompdf->output();
+
+        // Préparer l'email
+        $client = $facture->getClient();
+        $email = (new Email())
+            ->from('no-reply@exemple.ma')
+            ->to($client->getEmail())
+            ->subject('Votre facture ' . $facture->getReference())
+            ->text('Veuillez trouver votre facture en pièce jointe.')
+            ->attach($pdfOutput, 'facture-' . $facture->getReference() . '.pdf', 'application/pdf');
+
+        $mailer->send($email);
+
+        $this->addFlash('success', 'La facture a été envoyée par email à ' . $client->getEmail() . '.');
+        return $this->redirectToRoute('facture_show', ['id' => $facture->getId()]);
+    }
     public function __construct(
         private FactureRepository $factureRepository,
         private TiersRepository $tiersRepository,
@@ -76,6 +114,17 @@ class FactureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // attribuer la position selon l'ordre dans le formulaire
+            $position = 1;
+            foreach ($facture->getLignes() as $ligne) {
+                if (method_exists($ligne, 'setPosition')) {
+                    $ligne->setPosition($position++);
+                }
+            }
+            // garantir l'unicité de la référence au moment de l'insertion
+            while ($this->factureRepository->referenceExists($facture->getReference())) {
+                $facture->setReference($this->referenceGenerator->generateReference());
+            }
             $facture->calculerTotaux();
             $this->entityManager->persist($facture);
             $this->entityManager->flush();
@@ -106,6 +155,12 @@ class FactureController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $position = 1;
+            foreach ($facture->getLignes() as $ligne) {
+                if (method_exists($ligne, 'setPosition')) {
+                    $ligne->setPosition($position++);
+                }
+            }
             $facture->calculerTotaux();
             $this->entityManager->flush();
 
