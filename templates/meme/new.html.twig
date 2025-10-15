@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau meme - {{ app_name }}{% endblock %}
+{% block page_title %}Nouveau meme{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('meme_index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Retour
+    </a>
+{% endblock %}
+
+{% block body %}
+<div class="card">
+    <div class="card-body">
+        {{ form_start(form) }}
+            <div class="mb-3">
+                {{ form_label(form.title) }}
+                {{ form_widget(form.title, { 'attr': { 'class': 'form-control' } }) }}
+                {{ form_errors(form.title) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(form.imageUrl) }}
+                {{ form_widget(form.imageUrl, { 'attr': { 'class': 'form-control' } }) }}
+                {{ form_errors(form.imageUrl) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(form.caption) }}
+                {{ form_widget(form.caption, { 'attr': { 'class': 'form-control', 'rows': 3 } }) }}
+                {{ form_errors(form.caption) }}
+            </div>
+
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-save"></i> Enregistrer
+            </button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

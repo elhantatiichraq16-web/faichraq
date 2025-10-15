@@ -71,6 +71,11 @@
                                 <i class="bi bi-receipt"></i> Factures
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if app.request.get('_route') starts with 'meme' %}active{% endif %}" href="{{ path('meme_index') }}">
+                                <i class="bi bi-image"></i> Memes
+                            </a>
+                        </li>
                     </ul>
                     
                     <hr>
