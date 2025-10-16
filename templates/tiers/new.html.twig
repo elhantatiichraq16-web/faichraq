@@ -19,47 +19,59 @@
                 </h5>
             </div>
             <div class="card-body">
-                {{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
+                <form method="post" action="{{ path('tiers_new') }}" novalidate>
+                    <input type="hidden" name="_token" value="{{ csrf_token('create_tiers') }}">
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.nom) }}
-                                {{ form_widget(form.nom) }}
-                                {{ form_errors(form.nom) }}
+                                <label for="nom" class="form-label">Nom *</label>
+                                <input type="text" id="nom" name="nom" class="form-control" placeholder="Nom du client" value="{{ (data.nom ?? tiers.nom) ?? '' }}">
+                                {% if errors.nom is defined %}
+                                    <div class="text-danger small">{{ errors.nom|join(', ') }}</div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.email) }}
-                                {{ form_widget(form.email) }}
-                                {{ form_errors(form.email) }}
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" id="email" name="email" class="form-control" placeholder="email@exemple.com" value="{{ (data.email ?? tiers.email) ?? '' }}">
+                                {% if errors.email is defined %}
+                                    <div class="text-danger small">{{ errors.email|join(', ') }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.telephone) }}
-                                {{ form_widget(form.telephone) }}
-                                {{ form_errors(form.telephone) }}
+                                <label for="telephone" class="form-label">Téléphone</label>
+                                <input type="text" id="telephone" name="telephone" class="form-control" placeholder="Numéro de téléphone" value="{{ (data.telephone ?? tiers.telephone) ?? '' }}">
+                                {% if errors.telephone is defined %}
+                                    <div class="text-danger small">{{ errors.telephone|join(', ') }}</div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.numTva) }}
-                                {{ form_widget(form.numTva) }}
-                                {{ form_errors(form.numTva) }}
+                                <label for="numTva" class="form-label">Numéro TVA</label>
+                                <input type="text" id="numTva" name="numTva" class="form-control" placeholder="Numéro de TVA intracommunautaire" value="{{ (data.numTva ?? tiers.numTva) ?? '' }}">
+                                {% if errors.numTva is defined %}
+                                    <div class="text-danger small">{{ errors.numTva|join(', ') }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
-                        {{ form_label(form.adresse) }}
-                        {{ form_widget(form.adresse) }}
-                        {{ form_errors(form.adresse) }}
+                        <label for="adresse" class="form-label">Adresse</label>
+                        <textarea id="adresse" name="adresse" class="form-control" rows="3" placeholder="Adresse complète">{{ (data.adresse ?? tiers.adresse) ?? '' }}</textarea>
+                        {% if errors.adresse is defined %}
+                            <div class="text-danger small">{{ errors.adresse|join(', ') }}</div>
+                        {% endif %}
                     </div>
-                    
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> Créer le client
@@ -68,7 +80,7 @@
                             <i class="bi bi-x-circle"></i> Annuler
                         </a>
                     </div>
-                {{ form_end(form) }}
+                </form>
             </div>
         </div>
     </div>

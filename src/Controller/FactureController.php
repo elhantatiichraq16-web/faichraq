@@ -10,7 +10,6 @@ use Symfony\Component\Mime\Email;
 
 use App\Entity\Facture;
 use App\Entity\LigneFacture;
-use App\Form\FactureType;
 use App\Repository\FactureRepository;
 use App\Repository\TiersRepository;
 use App\Service\ReferenceGenerator;
@@ -22,6 +21,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/facture')]
 class FactureController extends AbstractController
@@ -98,7 +98,7 @@ class FactureController extends AbstractController
     }
 
     #[Route('/new', name: 'facture_new', methods: ['GET', 'POST'])]
-    public function new(Request $request): Response
+    public function new(Request $request, ValidatorInterface $validator): Response
     {
         $facture = new Facture();
         $facture->setReference($this->referenceGenerator->generateReference());
@@ -110,33 +110,89 @@ class FactureController extends AbstractController
         $ligne->setTva('20.00');
         $facture->addLigne($ligne);
 
-        $form = $this->createForm(FactureType::class, $facture);
-        $form->handleRequest($request);
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('create_facture', $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Le jeton CSRF est invalide.');
+                return $this->redirectToRoute('facture_new');
+            }
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // attribuer la position selon l'ordre dans le formulaire
+            $facture->setReference((string) $request->request->get('reference', $facture->getReference() ?? ''));
+
+            $clientId = $request->request->get('client_id');
+            $client = $clientId ? $this->tiersRepository->find($clientId) : null;
+            $facture->setClient($client);
+
+            $dateFactureStr = $request->request->get('dateFacture');
+            $dateEcheanceStr = $request->request->get('dateEcheance');
+            if ($dateFactureStr) { $facture->setDateFacture(new \DateTime($dateFactureStr)); }
+            if ($dateEcheanceStr) { $facture->setDateEcheance(new \DateTime($dateEcheanceStr)); }
+
+            $facture->setEtat((string) $request->request->get('etat', $facture->getEtat()));
+            $facture->setDevise((string) $request->request->get('devise', $facture->getDevise()));
+            $facture->setNotes($request->request->get('notes') ?: null);
+
+            // Reset lines and rebuild from request
+            foreach ($facture->getLignes()->toArray() as $existing) {
+                $facture->removeLigne($existing);
+            }
+
+            $lignesData = $request->request->all('lignes');
             $position = 1;
-            foreach ($facture->getLignes() as $ligne) {
-                if (method_exists($ligne, 'setPosition')) {
-                    $ligne->setPosition($position++);
+            if (is_array($lignesData)) {
+                foreach ($lignesData as $ligneData) {
+                    $newLigne = new LigneFacture();
+                    $newLigne->setDesignation((string) ($ligneData['designation'] ?? ''));
+                    $newLigne->setQuantite((int) ($ligneData['quantite'] ?? 0));
+                    $newLigne->setPrixUnitaire(number_format((float) ($ligneData['prixUnitaire'] ?? 0), 2, '.', ''));
+                    $newLigne->setTva(number_format((float) ($ligneData['tva'] ?? 0), 2, '.', ''));
+                    if (isset($ligneData['remise'])) {
+                        $newLigne->setRemise(number_format((float) $ligneData['remise'], 2, '.', ''));
+                    }
+                    $newLigne->setIsSection((bool) ($ligneData['isSection'] ?? false));
+                    if (method_exists($newLigne, 'setPosition')) {
+                        $newLigne->setPosition($position++);
+                    }
+                    $facture->addLigne($newLigne);
                 }
             }
+
             // garantir l'unicité de la référence au moment de l'insertion
             while ($this->factureRepository->referenceExists($facture->getReference())) {
                 $facture->setReference($this->referenceGenerator->generateReference());
             }
+
             $facture->calculerTotaux();
-            $this->entityManager->persist($facture);
-            $this->entityManager->flush();
 
-            $this->addFlash('success', 'La facture a été créée avec succès.');
+            $violations = $validator->validate($facture);
+            if (count($violations) === 0) {
+                $this->entityManager->persist($facture);
+                $this->entityManager->flush();
 
-            return $this->redirectToRoute('facture_show', ['id' => $facture->getId()]);
+                $this->addFlash('success', 'La facture a été créée avec succès.');
+
+                return $this->redirectToRoute('facture_show', ['id' => $facture->getId()]);
+            }
+
+            $errors = [];
+            foreach ($violations as $violation) {
+                $errors[$violation->getPropertyPath()][] = $violation->getMessage();
+            }
+
+            $clients = $this->tiersRepository->findBy([], ['nom' => 'ASC']);
+            return $this->render('facture/new.html.twig', [
+                'facture' => $facture,
+                'clients' => $clients,
+                'errors' => $errors,
+                'data' => $request->request->all(),
+            ]);
         }
 
+        $clients = $this->tiersRepository->findBy([], ['nom' => 'ASC']);
         return $this->render('facture/new.html.twig', [
             'facture' => $facture,
-            'form' => $form,
+            'clients' => $clients,
+            'errors' => [],
+            'data' => [],
         ]);
     }
 
@@ -149,29 +205,87 @@ class FactureController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'facture_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Facture $facture): Response
+    public function edit(Request $request, Facture $facture, ValidatorInterface $validator): Response
     {
-        $form = $this->createForm(FactureType::class, $facture);
-        $form->handleRequest($request);
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('edit_facture'.$facture->getId(), $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Le jeton CSRF est invalide.');
+                return $this->redirectToRoute('facture_edit', ['id' => $facture->getId()]);
+            }
 
-        if ($form->isSubmitted() && $form->isValid()) {
+            $facture->setReference((string) $request->request->get('reference', $facture->getReference() ?? ''));
+
+            $clientId = $request->request->get('client_id');
+            if ($clientId) {
+                $client = $this->tiersRepository->find($clientId);
+                $facture->setClient($client);
+            }
+
+            $dateFactureStr = $request->request->get('dateFacture');
+            $dateEcheanceStr = $request->request->get('dateEcheance');
+            if ($dateFactureStr) { $facture->setDateFacture(new \DateTime($dateFactureStr)); }
+            $facture->setDateEcheance($dateEcheanceStr ? new \DateTime($dateEcheanceStr) : null);
+
+            $facture->setEtat((string) $request->request->get('etat', $facture->getEtat()));
+            $facture->setDevise((string) $request->request->get('devise', $facture->getDevise()));
+            $facture->setNotes($request->request->get('notes') ?: null);
+
+            // Replace lines
+            foreach ($facture->getLignes()->toArray() as $existing) {
+                $facture->removeLigne($existing);
+                $this->entityManager->remove($existing);
+            }
+            $lignesData = $request->request->all('lignes');
             $position = 1;
-            foreach ($facture->getLignes() as $ligne) {
-                if (method_exists($ligne, 'setPosition')) {
-                    $ligne->setPosition($position++);
+            if (is_array($lignesData)) {
+                foreach ($lignesData as $ligneData) {
+                    $newLigne = new LigneFacture();
+                    $newLigne->setDesignation((string) ($ligneData['designation'] ?? ''));
+                    $newLigne->setQuantite((int) ($ligneData['quantite'] ?? 0));
+                    $newLigne->setPrixUnitaire(number_format((float) ($ligneData['prixUnitaire'] ?? 0), 2, '.', ''));
+                    $newLigne->setTva(number_format((float) ($ligneData['tva'] ?? 0), 2, '.', ''));
+                    if (isset($ligneData['remise'])) {
+                        $newLigne->setRemise(number_format((float) $ligneData['remise'], 2, '.', ''));
+                    }
+                    $newLigne->setIsSection((bool) ($ligneData['isSection'] ?? false));
+                    if (method_exists($newLigne, 'setPosition')) {
+                        $newLigne->setPosition($position++);
+                    }
+                    $facture->addLigne($newLigne);
                 }
             }
+
             $facture->calculerTotaux();
-            $this->entityManager->flush();
 
-            $this->addFlash('success', 'La facture a été modifiée avec succès.');
+            $violations = $validator->validate($facture);
+            if (count($violations) === 0) {
+                $this->entityManager->flush();
 
-            return $this->redirectToRoute('facture_show', ['id' => $facture->getId()]);
+                $this->addFlash('success', 'La facture a été modifiée avec succès.');
+
+                return $this->redirectToRoute('facture_show', ['id' => $facture->getId()]);
+            }
+
+            $errors = [];
+            foreach ($violations as $violation) {
+                $errors[$violation->getPropertyPath()][] = $violation->getMessage();
+            }
+
+            $clients = $this->tiersRepository->findBy([], ['nom' => 'ASC']);
+            return $this->render('facture/edit.html.twig', [
+                'facture' => $facture,
+                'clients' => $clients,
+                'errors' => $errors,
+                'data' => $request->request->all(),
+            ]);
         }
 
+        $clients = $this->tiersRepository->findBy([], ['nom' => 'ASC']);
         return $this->render('facture/edit.html.twig', [
             'facture' => $facture,
-            'form' => $form,
+            'clients' => $clients,
+            'errors' => [],
+            'data' => [],
         ]);
     }
 

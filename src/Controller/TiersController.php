@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\Tiers;
-use App\Form\TiersType;
 use App\Repository\TiersRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -11,6 +10,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/tiers')]
 class TiersController extends AbstractController
@@ -40,24 +40,48 @@ class TiersController extends AbstractController
     }
 
     #[Route('/new', name: 'tiers_new', methods: ['GET', 'POST'])]
-    public function new(Request $request): Response
+    public function new(Request $request, ValidatorInterface $validator): Response
     {
         $tiers = new Tiers();
-        $form = $this->createForm(TiersType::class, $tiers);
-        $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->persist($tiers);
-            $this->entityManager->flush();
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('create_tiers', $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Le jeton CSRF est invalide.');
+                return $this->redirectToRoute('tiers_new');
+            }
 
-            $this->addFlash('success', 'Le client a été créé avec succès.');
+            $tiers->setNom((string) $request->request->get('nom', ''))
+                ->setEmail($request->request->get('email') ?: null)
+                ->setAdresse($request->request->get('adresse') ?: null)
+                ->setTelephone($request->request->get('telephone') ?: null)
+                ->setNumTva($request->request->get('numTva') ?: null);
 
-            return $this->redirectToRoute('tiers_index');
+            $violations = $validator->validate($tiers);
+            if (count($violations) === 0) {
+                $this->entityManager->persist($tiers);
+                $this->entityManager->flush();
+
+                $this->addFlash('success', 'Le client a été créé avec succès.');
+
+                return $this->redirectToRoute('tiers_index');
+            }
+
+            $errors = [];
+            foreach ($violations as $violation) {
+                $errors[$violation->getPropertyPath()][] = $violation->getMessage();
+            }
+
+            return $this->render('tiers/new.html.twig', [
+                'tiers' => $tiers,
+                'errors' => $errors,
+                'data' => $request->request->all(),
+            ]);
         }
 
         return $this->render('tiers/new.html.twig', [
             'tiers' => $tiers,
-            'form' => $form,
+            'errors' => [],
+            'data' => [],
         ]);
     }
 
@@ -70,22 +94,45 @@ class TiersController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'tiers_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Tiers $tiers): Response
+    public function edit(Request $request, Tiers $tiers, ValidatorInterface $validator): Response
     {
-        $form = $this->createForm(TiersType::class, $tiers);
-        $form->handleRequest($request);
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('edit_tiers'.$tiers->getId(), $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Le jeton CSRF est invalide.');
+                return $this->redirectToRoute('tiers_edit', ['id' => $tiers->getId()]);
+            }
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->flush();
+            $tiers->setNom((string) $request->request->get('nom', ''))
+                ->setEmail($request->request->get('email') ?: null)
+                ->setAdresse($request->request->get('adresse') ?: null)
+                ->setTelephone($request->request->get('telephone') ?: null)
+                ->setNumTva($request->request->get('numTva') ?: null);
 
-            $this->addFlash('success', 'Le client a été modifié avec succès.');
+            $violations = $validator->validate($tiers);
+            if (count($violations) === 0) {
+                $this->entityManager->flush();
 
-            return $this->redirectToRoute('tiers_index');
+                $this->addFlash('success', 'Le client a été modifié avec succès.');
+
+                return $this->redirectToRoute('tiers_index');
+            }
+
+            $errors = [];
+            foreach ($violations as $violation) {
+                $errors[$violation->getPropertyPath()][] = $violation->getMessage();
+            }
+
+            return $this->render('tiers/edit.html.twig', [
+                'tiers' => $tiers,
+                'errors' => $errors,
+                'data' => $request->request->all(),
+            ]);
         }
 
         return $this->render('tiers/edit.html.twig', [
             'tiers' => $tiers,
-            'form' => $form,
+            'errors' => [],
+            'data' => [],
         ]);
     }
 
