@@ -27,20 +27,24 @@
                 </h5>
             </div>
             <div class="card-body">
-                {{ form_start(form, {'attr': {'novalidate': 'novalidate', 'id': 'facture-form'}}) }}
+                <form method="post" action="{{ path('facture_edit', {'id': facture.id}) }}" novalidate id="facture-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('edit_facture' ~ facture.id) }}">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.reference) }}
-                                {{ form_widget(form.reference) }}
-                                {{ form_errors(form.reference) }}
+                                <label for="reference" class="form-label">Référence</label>
+                                <input type="text" id="reference" name="reference" class="form-control" value="{{ (data.reference ?? facture.reference) ?? '' }}" readonly>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.client) }}
-                                {{ form_widget(form.client) }}
-                                {{ form_errors(form.client) }}
+                                <label for="client_id" class="form-label">Client *</label>
+                                <select id="client_id" name="client_id" class="form-select">
+                                    <option value="">Sélectionner un client</option>
+                                    {% for c in clients %}
+                                        <option value="{{ c.id }}" {% if (data.client_id ?? facture.client?.id) == c.id %}selected{% endif %}>{{ c.nom }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -48,23 +52,24 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">
-                                {{ form_label(form.dateFacture) }}
-                                {{ form_widget(form.dateFacture) }}
-                                {{ form_errors(form.dateFacture) }}
+                                <label for="dateFacture" class="form-label">Date de facture *</label>
+                                <input type="date" id="dateFacture" name="dateFacture" class="form-control" value="{{ (data.dateFacture ?? facture.dateFacture|date('Y-m-d')) ?? '' }}">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                {{ form_label(form.dateEcheance) }}
-                                {{ form_widget(form.dateEcheance) }}
-                                {{ form_errors(form.dateEcheance) }}
+                                <label for="dateEcheance" class="form-label">Date d'échéance</label>
+                                <input type="date" id="dateEcheance" name="dateEcheance" class="form-control" value="{{ data.dateEcheance ?? (facture.dateEcheance ? facture.dateEcheance|date('Y-m-d') : '') }}">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
-                                {{ form_label(form.etat) }}
-                                {{ form_widget(form.etat) }}
-                                {{ form_errors(form.etat) }}
+                                <label for="etat" class="form-label">État</label>
+                                <select id="etat" name="etat" class="form-select">
+                                    {% for label, value in facture.getEtatsDisponibles() %}
+                                        <option value="{{ value }}" {% if (data.etat ?? facture.etat) == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -72,54 +77,58 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                {{ form_label(form.devise) }}
-                                {{ form_widget(form.devise) }}
-                                {{ form_errors(form.devise) }}
+                                <label for="devise" class="form-label">Devise</label>
+                                <select id="devise" name="devise" class="form-select">
+                                    {% set dev = data.devise ?? facture.devise %}
+                                    <option value="MAD" {% if dev == 'MAD' %}selected{% endif %}>MAD</option>
+                                    <option value="EUR" {% if dev == 'EUR' %}selected{% endif %}>EUR</option>
+                                    <option value="USD" {% if dev == 'USD' %}selected{% endif %}>USD</option>
+                                </select>
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        {{ form_label(form.notes) }}
-                        {{ form_widget(form.notes) }}
-                        {{ form_errors(form.notes) }}
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Notes additionnelles">{{ (data.notes ?? facture.notes) ?? '' }}</textarea>
                     </div>
                     
                     <hr>
                     
                     <h5>Lignes de facture</h5>
-                    <div id="lignes-container"
-                         data-prototype="{{ form_widget(form.lignes.vars.prototype)|e('html_attr') }}"
-                         data-index="{{ form.lignes|length }}">
-                        {% for ligne in form.lignes %}
+                    <div id="lignes-container" data-index="0">
+                        {% set lignes = data.lignes ?? [] %}
+                        {% if lignes is empty %}
+                            {% set lignes = [] %}
+                            {% for l in facture.lignes %}
+                                {% set lignes = lignes|merge([{ designation: l.designation, quantite: l.quantite, prixUnitaire: l.prixUnitaire, tva: l.tva }]) %}
+                            {% endfor %}
+                        {% endif %}
+                        {% for i, ligne in lignes %}
                             <div class="ligne-item border p-3 mb-3 rounded">
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="mb-3">
-                                            {{ form_label(ligne.designation) }}
-                                            {{ form_widget(ligne.designation) }}
-                                            {{ form_errors(ligne.designation) }}
+                                            <label class="form-label">Désignation</label>
+                                            <input type="text" name="lignes[{{ i }}][designation]" class="form-control" value="{{ ligne.designation ?? '' }}">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="mb-3">
-                                            {{ form_label(ligne.quantite) }}
-                                            {{ form_widget(ligne.quantite, {'attr': {'class': 'form-control quantite'}}) }}
-                                            {{ form_errors(ligne.quantite) }}
+                                            <label class="form-label">Quantité</label>
+                                            <input type="number" name="lignes[{{ i }}][quantite]" class="form-control quantite" value="{{ ligne.quantite ?? 1 }}">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="mb-3">
-                                            {{ form_label(ligne.prixUnitaire) }}
-                                            {{ form_widget(ligne.prixUnitaire, {'attr': {'class': 'form-control prix-unitaire'}}) }}
-                                            {{ form_errors(ligne.prixUnitaire) }}
+                                            <label class="form-label">Prix unitaire</label>
+                                            <input type="number" step="0.01" name="lignes[{{ i }}][prixUnitaire]" class="form-control prix-unitaire" value="{{ ligne.prixUnitaire ?? '0.00' }}">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
                                         <div class="mb-3">
-                                            {{ form_label(ligne.tva) }}
-                                            {{ form_widget(ligne.tva, {'attr': {'class': 'form-control tva'}}) }}
-                                            {{ form_errors(ligne.tva) }}
+                                            <label class="form-label">TVA (%)</label>
+                                            <input type="number" step="0.01" name="lignes[{{ i }}][tva]" class="form-control tva" value="{{ ligne.tva ?? '20.00' }}">
                                         </div>
                                     </div>
                                     <div class="col-md-2">
@@ -127,7 +136,7 @@
                                             <label class="form-label">Total</label>
                                             <div class="input-group">
                                                 <input type="text" class="form-control ligne-total" readonly>
-                                                <span class="input-group-text">{{ form.devise.vars.value }}</span>
+                                                <span class="input-group-text">{{ facture.devise }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -183,7 +192,7 @@
                             <i class="bi bi-x-circle"></i> Annuler
                         </a>
                     </div>
-                {{ form_end(form) }}
+                </form>
             </div>
         </div>
     </div>
@@ -197,7 +206,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const lignesContainer = document.getElementById('lignes-container');
     const addLigneBtn = document.getElementById('add-ligne');
     const addSectionBtn = document.getElementById('add-section');
-    const prototype = lignesContainer.dataset.prototype;
+    const prototype = `
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label class="form-label">Désignation</label>
+                    <input type="text" name="lignes[__name__][designation]" class="form-control">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label class="form-label">Quantité</label>
+                    <input type="number" name="lignes[__name__][quantite]" class="form-control quantite" value="1">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label class="form-label">Prix unitaire</label>
+                    <input type="number" step="0.01" name="lignes[__name__][prixUnitaire]" class="form-control prix-unitaire" value="0.00">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label class="form-label">TVA (%)</label>
+                    <input type="number" step="0.01" name="lignes[__name__][tva]" class="form-control tva" value="20.00">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="mb-3">
+                    <label class="form-label">Total</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control ligne-total" readonly>
+                        <span class="input-group-text">${document.getElementById('devise')?.value || 'MAD'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
     function getNextIndex() {
         let i = parseInt(lignesContainer.getAttribute('data-index') || '0', 10);
         lignesContainer.setAttribute('data-index', String(i + 1));
